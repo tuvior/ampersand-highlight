@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         % Highlight
 // @namespace    http://tampermonkey.net/
-// @version      2.4
+// @version      2.5
 // @description  No spam please!
 // @author       /u/tuvior
 // @include      https://www.reddit.com/robin*
 // @require      http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
 // @downloadURL  https://raw.githubusercontent.com/tuvior/ampersand_highlight/master/ampersand_highlight.user.js
+// @updateURL    https://raw.githubusercontent.com/tuvior/ampersand_highlight/master/ampersand_highlight.user.js
 // @grant        GM_getValue
 // ==/UserScript==
 (function () {
