@@ -7,7 +7,7 @@
 // @include      https://www.reddit.com/robin*
 // @require      http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
 // @downloadURL  https://github.com/tuvior/ampersand_highlight/blob/master/ampersand_highlight.user.js
-// @grant        none
+// @grant        GM_getValue
 // ==/UserScript==
 (function () {
 
