@@ -18,7 +18,7 @@
     ];
 
     //change this for your cool groups
-    var prefix = '%';
+    var prefix = '%chat';
 
     //trivia hosts
     var triviaHosts = [
@@ -73,7 +73,7 @@
 
         var msg_prefix = msg.split(" ")[0];
 
-        if ($.inArray(msg_prefix, filter) < 0) {
+        if ($.inArray(msg_prefix, filter) < 0 && !isMention(msg, name)) {
             msgItem.remove();
             return;
         }
@@ -87,7 +87,7 @@
                 "font-weight": 'bold'
             });
 
-            if (msg.toLowerCase().contains(username.toLowerCase()) && name !== username) {
+            if (isMention(msg, name)) {
                 msgItem.css({
                     color: 'red'
                 });
@@ -114,6 +114,10 @@
                 }
             }
         }
+    }
+
+    function isMention(message, user) {
+        return message.toLowerCase().contains(username.toLowerCase()) && user !== username
     }
 
     var chatBox = $("#robinSendMessage").find("input[type='text']");
