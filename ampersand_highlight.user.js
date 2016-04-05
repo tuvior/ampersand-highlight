@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         % Highlight
 // @namespace    http://tampermonkey.net/
-// @version      2.5
+// @version      2.7
 // @description  No spam please!
 // @author       /u/tuvior
 // @include      https://www.reddit.com/robin*
@@ -23,23 +23,26 @@
     //trivia hosts
     var triviaHosts = [
         'dthunder',
-        'nbagf'
+        'nbagf',
+        'npinsker'
     ];
 
     var prefixes = {
-        "%": "rgba(255,165,0,.3)",
+        "%": "rgba(204,204,0,.3)",
+        "%chat": "rgba(255,165,0,.3)",
         "#": "rgba(165,255,0,.3)",
-        "$": "rgba(0,165,255,.3)",
+        "#gov": "rgba(0,165,255,.3)",
         "&": "rgba(0,255,165,.3)",
         "^": "rgba(165,0,255,.3)",
-        "+": "rgba(153,102,255,.3)"
+        "#rpg": "rgba(153,102,255,.3)",
+        "%parrot": "rgba(0,153,153,.3"
     };
 
     //our name
     var username = $('div#header span.user a').html();
 
     //trivia prefix
-    var t_prefix = '~';
+    var t_prefix = '$';
     var plain_prefix = '-';
 
     // mutation observer for new messages, thanks to Leo :)
@@ -62,11 +65,13 @@
         var msg = msgItem["0"].getElementsByClassName("robin-message--message")[0].innerHTML;
         var name = msgItem["0"].getElementsByClassName("robin-message--from robin--username")[0].innerHTML;
 
-        if (prefixes[msg.charAt(0)] !== undefined && $.inArray(name, badMonkeys) < 0) {
-            msgItem["0"].getElementsByClassName("robin-message--message")[0].innerHTML = msg.substring(1).trim();
-            msgItem["0"].getElementsByClassName("robin-message--from robin--username")[0].innerHTML = '[' + msg[0] + '] ' + name;
+        var msg_prefix = msg.split(" ")[0];
+
+        if (prefixes[msg_prefix] !== undefined && $.inArray(name, badMonkeys) < 0) {
+            msgItem["0"].getElementsByClassName("robin-message--message")[0].innerHTML = msg.substring(msg_prefix.length).trim();
+            msgItem["0"].getElementsByClassName("robin-message--from robin--username")[0].innerHTML = '[' + msg_prefix + '] ' + name;
             msgItem.css({
-                background: prefixes[msg.charAt(0)],
+                background: prefixes[msg_prefix],
                 color: 'black',
                 "font-weight": 'bold'
             });
@@ -105,7 +110,7 @@
     //bind prefix to the beginning of messages
     chatBox.next().on('click', function () {
         var message = chatBox.val();
-        var message_prefix = message[0];
+        var message_prefix = message.split(" ")[0];
         if (prefixes[message_prefix] !== undefined) {
             prefix = message_prefix;
         }
