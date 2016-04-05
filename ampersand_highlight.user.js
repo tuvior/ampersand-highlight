@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         % Highlight
 // @namespace    http://tampermonkey.net/
-// @version      2.8
+// @version      2.9
 // @description  No spam please!
 // @author       /u/tuvior
 // @include      https://www.reddit.com/robin*
@@ -14,7 +14,8 @@
 
     //add names of the bad guys here
     var badMonkeys = [
-        'chapebrone'
+        'chapebrone',
+        'nigglet'
     ];
 
     //change this for your cool groups
@@ -28,15 +29,17 @@
     ];
 
     var prefixes = {
-        "%": "rgba(204,204,0,.3)",
-        "%chat": "rgba(255,165,0,.3)",
-        "#": "rgba(165,255,0,.3)",
-        "#gov": "rgba(0,165,255,.3)",
-        "&": "rgba(0,255,165,.3)",
-        "^": "rgba(165,0,255,.3)",
-        "#rpg": "rgba(153,102,255,.3)",
-        "%parrot": "rgba(0,153,153,.3"
+        "%"         : "rgba(204,204,0,.3)",
+        "%chat"     : "rgba(255,165,0,.3)",
+        "#"         : "rgba(165,255,0,.3)",
+        "#gov"      : "rgba(0,165,255,.3)",
+        "&"         : "rgba(0,255,165,.3)",
+        "^"         : "rgba(165,0,255,.3)",
+        "#rpg"      : "rgba(153,102,255,.3)",
+        "%parrot"   : "rgba(0,153,153,.3"
     };
+
+    var seen_channels = [];
 
     var filter = [
         '%chat',
@@ -47,9 +50,29 @@
     //our name
     var username = $('div#header span.user a').html();
 
+    var plain = false;
+
     //trivia prefix
     var t_prefix = '$';
     var plain_prefix = '-';
+
+    String.prototype.lpad = function (padString, length) {
+        var str = this;
+        var prepend_str = "";
+        for (var i = str.length; i < length; i++) {
+            prepend_str = padString + prepend_str;
+        }
+        return prepend_str + str;
+    };
+
+    String.prototype.rpad = function (padString, length) {
+        var str = this;
+        var prepend_str = "";
+        for (var i = str.length; i < length; i++) {
+            prepend_str = padString + prepend_str;
+        }
+        return str + prepend_str;
+    };
 
     // mutation observer for new messages, thanks to Leo :)
     var observer = new MutationObserver(function (mutations) {
@@ -68,21 +91,29 @@
 
     function checkForPrefixes(message) {
         var msgItem = $(message);
-        var msg = msgItem["0"].getElementsByClassName("robin-message--message")[0].innerHTML;
+        var msg = msgItem["0"].getElementsByClassName("robin-message--message")[0].innerHTML.trim();
         var name = msgItem["0"].getElementsByClassName("robin-message--from robin--username")[0].innerHTML;
 
-        var msg_prefix = msg.split(" ")[0];
+        var msg_prefix = isPrefix(msg.split(" ")[0]) ? msg.split(" ")[0] : '';
 
-        if ($.inArray(msg_prefix, filter) < 0 && !isMention(msg, name)) {
+        msgItem.css({"font-family": 'Consolas'});
+
+        if (name === '[robin]' || name.contains('ampersand_highlight')) return;
+
+        if (msg_prefix !== '' && isPrefix(msg_prefix) && seen_channels.indexOf(msg_prefix) < 0) {
+            seen_channels.push(msg_prefix);
+        }
+
+        if ($.inArray(name, badMonkeys) > -1 || ($.inArray(msg_prefix, filter) < 0 && !isMention(msg, name))) {
             msgItem.remove();
             return;
         }
 
-        if (prefixes[msg_prefix] !== undefined && $.inArray(name, badMonkeys) < 0) {
+        if (prefixes[msg_prefix] !== undefined || plain) {
             msgItem["0"].getElementsByClassName("robin-message--message")[0].innerHTML = msg.substring(msg_prefix.length).trim();
-            msgItem["0"].getElementsByClassName("robin-message--from robin--username")[0].innerHTML = '[' + msg_prefix + '] ' + name;
+            msgItem["0"].getElementsByClassName("robin-message--from robin--username")[0].innerHTML = ('[' + msg_prefix + ']').rpad("&nbsp", 10) + ' ' + name.lpad('&nbsp;', 19);
             msgItem.css({
-                background: prefixes[msg_prefix],
+                background: prefixes[msg_prefix] == undefined ? '' : prefixes[msg_prefix],
                 color: 'black',
                 "font-weight": 'bold'
             });
@@ -92,7 +123,7 @@
                     color: 'red'
                 });
             }
-        } else if (msg.startsWith(t_prefix) && $.inArray(name, badMonkeys) < 0) {
+        } else if (msg.startsWith(t_prefix)) {
             msgItem["0"].getElementsByClassName("robin-message--message")[0].innerHTML = msg.substring(t_prefix.length).trim();
             msgItem["0"].getElementsByClassName("robin-message--from robin--username")[0].innerHTML = '[' + t_prefix + '] ' + name;
             if ($.inArray(name, triviaHosts) >= 0) {
@@ -104,7 +135,8 @@
             } else {
                 msgItem.css({
                     background: "LightGray",
-                    color: 'black'
+                    color: 'black',
+                    "font-family": 'Consolas'
                 });
 
                 if (name === username) {
@@ -116,8 +148,25 @@
         }
     }
 
+    function isPrefix(string) {
+        return !string[0].match(/^[a-zA-Z0-9]*$/) && string[0] !== '[';
+    }
+
     function isMention(message, user) {
         return message.toLowerCase().contains(username.toLowerCase()) && user !== username
+    }
+
+    function systemMessage(message) {
+        var sys = $(".robin--message-class--message.robin--user-class--user").last().clone();
+        sys.css({
+            background: "",
+            color: '',
+            "font-weight": ''
+        });
+        sys["0"].getElementsByClassName("robin-message--message")[0].innerHTML = message;
+        ;
+        sys["0"].getElementsByClassName("robin-message--from robin--username")[0].innerHTML = ('[]').rpad("&nbsp", 10) + ' ' + 'ampersand_highlight'.lpad('&nbsp;', 19);
+        return sys;
     }
 
     var chatBox = $("#robinSendMessage").find("input[type='text']");
@@ -140,10 +189,27 @@
                 }
             } else if (params.startsWith('del')) {
                 pfix = params.substring(4);
-                if (pfix.length > 0 && filter.indexOf(pfix) > 0) {
+                if (pfix.length > 0 && filter.indexOf(pfix) > -1) {
                     filter.splice(filter.indexOf(pfix), 1);
                 }
             }
+            chatBox.val('');
+            event.cancel();
+        } else if (message === '/channels') {
+            var chans = seen_channels.join(', ');
+            var mess = systemMessage("Seen Prefixes: " + chans);
+            $("#robinChatMessageList").append(mess);
+            chatBox.val('');
+            event.cancel();
+        } else if (message === '/plain') {
+            if (filter.indexOf('') > -1) {
+                filter.splice(filter.indexOf(''), 1);
+                plain = false;
+            } else {
+                filter.push('');
+                plain = true;
+            }
+
             chatBox.val('');
             event.cancel();
         }
