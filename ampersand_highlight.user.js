@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         % Highlight
 // @namespace    http://tampermonkey.net/
-// @version      2.7
+// @version      2.8
 // @description  No spam please!
 // @author       /u/tuvior
 // @include      https://www.reddit.com/robin*
@@ -38,6 +38,12 @@
         "%parrot": "rgba(0,153,153,.3"
     };
 
+    var filter = [
+        '%chat',
+        '^',
+        '#'
+    ];
+
     //our name
     var username = $('div#header span.user a').html();
 
@@ -66,6 +72,11 @@
         var name = msgItem["0"].getElementsByClassName("robin-message--from robin--username")[0].innerHTML;
 
         var msg_prefix = msg.split(" ")[0];
+
+        if ($.inArray(msg_prefix, filter) < 0) {
+            msgItem.remove();
+            return;
+        }
 
         if (prefixes[msg_prefix] !== undefined && $.inArray(name, badMonkeys) < 0) {
             msgItem["0"].getElementsByClassName("robin-message--message")[0].innerHTML = msg.substring(msg_prefix.length).trim();
@@ -108,8 +119,30 @@
     var chatBox = $("#robinSendMessage").find("input[type='text']");
 
     //bind prefix to the beginning of messages
-    chatBox.next().on('click', function () {
+    chatBox.next().on('click', function (event) {
         var message = chatBox.val();
+        if (message.startsWith('/filter')) {
+            var params = message.substring(8);
+            var pfix;
+            if (params.startsWith('set')) {
+                var filt = params.substr(4).split(',');
+                if (filt.length > 0) {
+                    filter = filt;
+                }
+            } else if (params.startsWith('add')) {
+                pfix = params.substring(4);
+                if (pfix.length > 0) {
+                    filter.push(pfix);
+                }
+            } else if (params.startsWith('del')) {
+                pfix = params.substring(4);
+                if (pfix.length > 0 && filter.indexOf(pfix) > 0) {
+                    filter.splice(filter.indexOf(pfix), 1);
+                }
+            }
+            chatBox.val('');
+            event.cancel();
+        }
         var message_prefix = message.split(" ")[0];
         if (prefixes[message_prefix] !== undefined) {
             prefix = message_prefix;
